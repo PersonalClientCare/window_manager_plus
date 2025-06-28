@@ -25,10 +25,10 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
-  tray_manager: 9064e219c56d75c476e46b9a21182087930baf90
-  window_manager_plus: 18e39c7256dbb1e9bbc810417a5506de91f7129b
+  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
+  tray_manager: a104b5c81b578d83f3c3d0f40a997c8b10810166
+  window_manager_plus: e29fcf45a372b5312ad381ce5596a007994537ac
 
 PODFILE CHECKSUM: 353c8bcc5d5b0994e508d035b5431cfe18c1dea7
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.16.2

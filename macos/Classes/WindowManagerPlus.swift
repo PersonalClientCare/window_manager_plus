@@ -63,10 +63,33 @@ public class WindowManagerPlusFlutterWindow: NSWindow {
     }
 }
 
+/// Custom delegate for secondary windows
+public class SecondaryWindowDelegate: NSObject, NSWindowDelegate {
+    private let windowId: Int64
+    
+    public init(windowId: Int64) {
+        self.windowId = windowId
+        super.init()
+    }
+    
+    public func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // For secondary windows, always allow closing
+        return true
+    }
+    
+    public func windowWillClose(_ notification: Notification) {
+        // Clean up the secondary window from our tracking
+        WindowManagerPlus.windows[windowId] = nil
+        WindowManagerPlus.secondaryDelegates[windowId] = nil
+        debugPrint("Secondary window \(windowId) closing")
+    }
+}
+
 public class WindowManagerPlus: NSObject, NSWindowDelegate {
     private static var autoincrementId: Int64 = 0;
-    private static var windows: [Int64:WindowManagerPlusFlutterWindow?] = [:];
+    public static var windows: [Int64:WindowManagerPlusFlutterWindow?] = [:];
     public static var windowManagers: [Int64:WindowManagerPlus?] = [:];
+    public static var secondaryDelegates: [Int64:SecondaryWindowDelegate] = [:]
     
     public var staticChannel: FlutterMethodChannel?
     public var channel: FlutterMethodChannel?
@@ -87,6 +110,16 @@ public class WindowManagerPlus: NSObject, NSWindowDelegate {
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 270),
                 styleMask: [.miniaturizable, .closable, .resizable, .titled, .fullSizeContentView],
                 backing: .buffered, defer: false)
+            
+            // Configure the secondary window to stay on top and not affect main app
+            window.level = args.contains("alwaysOnTop") ? .floating : .normal // This makes it stay on top
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.isReleasedWhenClosed = false  // Prevent automatic cleanup that might affect main app
+            
+            // Set custom delegate for secondary window
+            let secondaryDelegate = SecondaryWindowDelegate(windowId: windowId)
+            window.delegate = secondaryDelegate
+            WindowManagerPlus.secondaryDelegates[windowId] = secondaryDelegate
             
             let flutterViewController = FlutterViewController(project: project)
             window.contentViewController = flutterViewController
@@ -565,7 +598,17 @@ public class WindowManagerPlus: NSObject, NSWindowDelegate {
     
     // NSWindowDelegate
     
+    private func isSecondaryWindow(_ window: NSWindow) -> Bool {
+        // Check if this window has a secondary delegate
+        return window.delegate is SecondaryWindowDelegate
+    }
+    
     public func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // If this is a secondary window, let the SecondaryWindowDelegate handle it
+        if isSecondaryWindow(sender) {
+            return true
+        }
+        
         emitEvent("close")
         if (isPreventClose()) {
             return false
